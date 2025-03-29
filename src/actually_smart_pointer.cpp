@@ -4,14 +4,21 @@
 
 #include <string>
 #include <vector>
-#include <cstdio>
-#include <cstring>
+#include <iostream>
 #include <typeinfo>
+#include <utility>
 
 namespace asp {
 
 #ifndef DEFAULT_MODEL_PATH
 #define DEFAULT_MODEL_PATH "models/deepseek-coder-6.7b-instruct.Q4_K_M.gguf"
+#endif
+
+// === Logging Macro ===
+#ifdef LLM_DEBUG_LOG_ENABLED
+    #define LOG(msg) (std::clog << msg << std::endl)
+#else
+    #define LOG(msg) ((void)0)
 #endif
 
 // === LLM singleton ===
@@ -25,7 +32,14 @@ public:
     std::string ask_with_context(const std::string& question, const std::string& history) {
         ensure_initialized();
         std::string full_prompt = "Previous interactions:\n" + history + "Q: " + question + "\nA:";
-        return ask_raw(full_prompt);
+
+        LOG("[LLM] Prompt:\n" << full_prompt);
+
+        std::string reply = ask_raw(full_prompt);
+
+        LOG("[LLM] Response:\n" << reply);
+
+        return reply;
     }
 
 private:
@@ -101,23 +115,29 @@ control_block<T>::~control_block() {
 
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(T* ptr)
-    : ctrl_(new control_block<T>(ptr, typeid(T).name())), history_() {}
+    : ctrl_(new control_block<T>(ptr, typeid(T).name())), history_() {
+    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::constructor");
+}
 
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(const actually_smart_pointer& other)
     : ctrl_(other.ctrl_), history_(other.history_) {
+    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::copy_constructor");
+
     std::string question = "Object of type '" + ctrl_->type_name + "' was copied. Allow it? Answer yes or no.";
     std::string reply = LLM::instance().ask_with_context(question, history_);
     history_ += "Q: " + question + "\n";
     history_ += "A: " + reply + "\n";
 
     if (reply.find("yes") == std::string::npos) {
-        fprintf(stderr, "[LLM] Copy rejected by model. Object may be shared without permission.\n");
+        LOG("[LLM] Copy rejected by model. Object may be shared without permission.");
     }
 }
 
 template <typename T>
 actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(const actually_smart_pointer& other) {
+    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::copy_assignment");
+
     if (this != &other) {
         std::string question = "Pointer assignment occurred for type '" + ctrl_->type_name + "'. Allow? yes/no";
         std::string reply = LLM::instance().ask_with_context(question, history_);
@@ -127,28 +147,35 @@ actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(const actually_s
         ctrl_ = other.ctrl_;
         history_ = other.history_;
     }
+
     return *this;
 }
 
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(actually_smart_pointer&& other) noexcept
     : ctrl_(other.ctrl_), history_(std::move(other.history_)) {
+    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::move_constructor");
     other.ctrl_ = nullptr;
 }
 
 template <typename T>
 actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(actually_smart_pointer&& other) noexcept {
+    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::move_assignment");
+
     if (this != &other) {
         ctrl_ = other.ctrl_;
         history_ = std::move(other.history_);
         other.ctrl_ = nullptr;
     }
+
     return *this;
 }
 
 template <typename T>
 actually_smart_pointer<T>::~actually_smart_pointer() {
     if (ctrl_) {
+        LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::destructor");
+
         std::string question = "Object of type '" + ctrl_->type_name + "' was released. Should it be deleted? Answer yes or no.";
         std::string reply = LLM::instance().ask_with_context(question, history_);
         history_ += "Q: " + question + "\n";
