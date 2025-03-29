@@ -48,6 +48,9 @@ private:
     void ensure_initialized() {
         if (model) return;
 
+
+        llama_log_set([](ggml_log_level, const char *, void *) {}, nullptr);
+
         ggml_backend_load_all();
 
         llama_model_params model_params = llama_model_default_params();
