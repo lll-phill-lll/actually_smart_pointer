@@ -8,14 +8,11 @@ template <typename T>
 struct control_block {
     T* ptr;
     size_t ref_count;
-    void* model;
-    void* context;
     std::string type_name;
 
     control_block(T* p, const std::string& type);
     ~control_block();
 
-    bool should_destroy();
     void retain();
     void release();
 };
@@ -26,6 +23,8 @@ public:
     actually_smart_pointer(T* ptr);
     actually_smart_pointer(const actually_smart_pointer& other);
     actually_smart_pointer& operator=(const actually_smart_pointer& other);
+    actually_smart_pointer(actually_smart_pointer&& other) noexcept;
+    actually_smart_pointer& operator=(actually_smart_pointer&& other) noexcept;
     ~actually_smart_pointer();
 
     T* get() const;
@@ -35,8 +34,6 @@ public:
 private:
     control_block<T>* ctrl_;
 };
-
-std::string ask_llm(const std::string& event, const std::string& type);
 
 } // namespace asp
 

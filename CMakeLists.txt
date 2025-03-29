@@ -4,6 +4,14 @@ project(actually_smart_pointer)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+file(CREATE_LINK
+  "${CMAKE_BINARY_DIR}/compile_commands.json"
+  "${CMAKE_SOURCE_DIR}/compile_commands.json"
+  SYMBOLIC
+)
+
+add_compile_definitions(DEFAULT_MODEL_PATH="${CMAKE_SOURCE_DIR}/models/deepseek-coder-6.7b-instruct.Q4_K_M.gguf")
+
 add_subdirectory(llama.cpp)
 include_directories(llama.cpp)
 
