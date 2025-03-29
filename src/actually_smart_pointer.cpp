@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <sstream>
 #include <utility>
 
 namespace asp {
@@ -38,9 +39,26 @@ public:
 
         std::string reply = ask_raw(full_prompt);
 
-        LOG(this) << "Response:\n" << reply << std::endl;
+        LOG(this) << "Raw Response:\n" << reply << std::endl;
 
-        if (reply.find(TRUE_STR) != std::string::npos) return TRUE_STR;
+        // Clean up: extract first non-empty trimmed line
+        std::istringstream stream(reply);
+        std::string cleaned;
+        for (std::string line; std::getline(stream, line); ) {
+            for (char& c : line) if (c == '\r') c = '\0'; // remove carriage returns
+            if (!line.empty()) {
+                cleaned = line;
+                break;
+            }
+        }
+
+        // Trim whitespace
+        cleaned.erase(0, cleaned.find_first_not_of(" \t\n\r"));
+        cleaned.erase(cleaned.find_last_not_of(" \t\n\r") + 1);
+
+        LOG(this) << "Parsed Response: \"" << cleaned << "\"" << std::endl;
+
+        if (cleaned == TRUE_STR) return TRUE_STR;
         return FALSE_STR;
     }
 
@@ -81,7 +99,9 @@ private:
         if (llama_decode(ctx, batch)) return "error";
 
         std::string result;
-        for (int i = 0; i < 20; ++i) {
+
+        const int max_tokens = 2;
+        for (int i = 0; i < max_tokens; ++i) {
             llama_token token = llama_sampler_sample(sampler, ctx, -1);
             if (llama_vocab_is_eog(vocab, token)) break;
 
