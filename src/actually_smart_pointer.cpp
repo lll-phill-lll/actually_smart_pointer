@@ -22,33 +22,10 @@ public:
         return inst;
     }
 
-    std::string ask(const std::string& question) {
+    std::string ask_with_context(const std::string& question, const std::string& history) {
         ensure_initialized();
-
-        const int n_prompt = -llama_tokenize(vocab, question.c_str(), question.size(), NULL, 0, true, true);
-        std::vector<llama_token> prompt_tokens(n_prompt);
-        if (llama_tokenize(vocab, question.c_str(), question.size(), prompt_tokens.data(), n_prompt, true, true) < 0) {
-            return "error";
-        }
-
-        llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
-        if (llama_decode(ctx, batch)) return "error";
-
-        std::string result;
-        for (int i = 0; i < 20; ++i) {
-            llama_token token = llama_sampler_sample(sampler, ctx, -1);
-            if (llama_vocab_is_eog(vocab, token)) break;
-
-            char buf[128];
-            int n = llama_token_to_piece(vocab, token, buf, sizeof(buf), 0, true);
-            if (n <= 0) break;
-            result.append(buf, n);
-
-            llama_batch token_batch = llama_batch_get_one(&token, 1);
-            llama_decode(ctx, token_batch);
-        }
-
-        return result;
+        std::string full_prompt = "Previous interactions:\n" + history + "Q: " + question + "\nA:";
+        return ask_raw(full_prompt);
     }
 
 private:
@@ -76,6 +53,33 @@ private:
         llama_sampler_chain_add(sampler, llama_sampler_init_greedy());
     }
 
+    std::string ask_raw(const std::string& prompt) {
+        const int n_prompt = -llama_tokenize(vocab, prompt.c_str(), prompt.size(), NULL, 0, true, true);
+        std::vector<llama_token> prompt_tokens(n_prompt);
+        if (llama_tokenize(vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), n_prompt, true, true) < 0) {
+            return "error";
+        }
+
+        llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
+        if (llama_decode(ctx, batch)) return "error";
+
+        std::string result;
+        for (int i = 0; i < 20; ++i) {
+            llama_token token = llama_sampler_sample(sampler, ctx, -1);
+            if (llama_vocab_is_eog(vocab, token)) break;
+
+            char buf[128];
+            int n = llama_token_to_piece(vocab, token, buf, sizeof(buf), 0, true);
+            if (n <= 0) break;
+            result.append(buf, n);
+
+            llama_batch token_batch = llama_batch_get_one(&token, 1);
+            llama_decode(ctx, token_batch);
+        }
+
+        return result;
+    }
+
     llama_model* model;
     llama_context* ctx;
     const llama_vocab* vocab;
@@ -86,66 +90,57 @@ private:
 
 template <typename T>
 control_block<T>::control_block(T* p, const std::string& type)
-    : ptr(p), ref_count(1), type_name(type) {}
+    : ptr(p), type_name(type) {}
 
 template <typename T>
 control_block<T>::~control_block() {
     delete ptr;
 }
 
-template <typename T>
-void control_block<T>::retain() {
-    ++ref_count;
-}
-
-template <typename T>
-void control_block<T>::release() {
-    if (--ref_count == 0) {
-        std::string reply = LLM::instance().ask("Object of type '" + type_name + "' was released. Should it be deleted? Answer yes or no.");
-        if (reply.find("yes") != std::string::npos) {
-            delete this;
-        }
-    }
-}
-
 // === actually_smart_pointer ===
 
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(T* ptr)
-    : ctrl_(new control_block<T>(ptr, typeid(T).name())) {}
+    : ctrl_(new control_block<T>(ptr, typeid(T).name())), history_() {}
 
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(const actually_smart_pointer& other)
-    : ctrl_(other.ctrl_) {
-    std::string reply = LLM::instance().ask("Object of type '" + ctrl_->type_name + "' was copied. Allow it? Answer yes or no.");
-    if (reply.find("yes") != std::string::npos) {
-        ctrl_->retain();
-    } else {
-        fprintf(stderr, "[LLM] Copy rejected by model, not increasing ref count.\n");
+    : ctrl_(other.ctrl_), history_(other.history_) {
+    std::string question = "Object of type '" + ctrl_->type_name + "' was copied. Allow it? Answer yes or no.";
+    std::string reply = LLM::instance().ask_with_context(question, history_);
+    history_ += "Q: " + question + "\n";
+    history_ += "A: " + reply + "\n";
+
+    if (reply.find("yes") == std::string::npos) {
+        fprintf(stderr, "[LLM] Copy rejected by model. Object may be shared without permission.\n");
     }
 }
 
 template <typename T>
 actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(const actually_smart_pointer& other) {
     if (this != &other) {
-        ctrl_->release();
+        std::string question = "Pointer assignment occurred for type '" + ctrl_->type_name + "'. Allow? yes/no";
+        std::string reply = LLM::instance().ask_with_context(question, history_);
+        history_ += "Q: " + question + "\n";
+        history_ += "A: " + reply + "\n";
+
         ctrl_ = other.ctrl_;
-        ctrl_->retain();
+        history_ = other.history_;
     }
     return *this;
 }
 
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(actually_smart_pointer&& other) noexcept
-    : ctrl_(other.ctrl_) {
+    : ctrl_(other.ctrl_), history_(std::move(other.history_)) {
     other.ctrl_ = nullptr;
 }
 
 template <typename T>
 actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(actually_smart_pointer&& other) noexcept {
     if (this != &other) {
-        ctrl_->release();
         ctrl_ = other.ctrl_;
+        history_ = std::move(other.history_);
         other.ctrl_ = nullptr;
     }
     return *this;
@@ -154,7 +149,14 @@ actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(actually_smart_p
 template <typename T>
 actually_smart_pointer<T>::~actually_smart_pointer() {
     if (ctrl_) {
-        ctrl_->release();
+        std::string question = "Object of type '" + ctrl_->type_name + "' was released. Should it be deleted? Answer yes or no.";
+        std::string reply = LLM::instance().ask_with_context(question, history_);
+        history_ += "Q: " + question + "\n";
+        history_ += "A: " + reply + "\n";
+
+        if (reply.find("yes") != std::string::npos) {
+            delete ctrl_;
+        }
     }
 }
 
@@ -167,7 +169,9 @@ T& actually_smart_pointer<T>::operator*() const { return *(ctrl_->ptr); }
 template <typename T>
 T* actually_smart_pointer<T>::operator->() const { return ctrl_->ptr; }
 
+// Explicit instantiations
 template class actually_smart_pointer<int>;
 template class actually_smart_pointer<std::string>;
 
 } // namespace asp
+

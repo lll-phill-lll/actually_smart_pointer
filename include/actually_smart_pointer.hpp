@@ -7,14 +7,10 @@ namespace asp {
 template <typename T>
 struct control_block {
     T* ptr;
-    size_t ref_count;
     std::string type_name;
 
     control_block(T* p, const std::string& type);
     ~control_block();
-
-    void retain();
-    void release();
 };
 
 template <typename T>
@@ -33,6 +29,7 @@ public:
 
 private:
     control_block<T>* ctrl_;
+    std::string history_;
 };
 
 } // namespace asp
