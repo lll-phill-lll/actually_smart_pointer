@@ -93,14 +93,11 @@ private:
         const int n_prompt = -llama_tokenize(vocab, prompt.c_str(), prompt.size(), NULL, 0, true, true);
         std::vector<llama_token> prompt_tokens(n_prompt);
         if (llama_tokenize(vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), n_prompt, true, true) < 0) {
-            std::cerr << "MISHA 1" << std::endl;
             return "error";
         }
 
         llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
         if (llama_decode(ctx, batch)) {
-
-            std::cerr << "MISHA 2" << std::endl;
             return "error";
         }
 
