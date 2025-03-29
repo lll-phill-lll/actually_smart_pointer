@@ -7,10 +7,12 @@ namespace asp {
 template <typename T>
 struct control_block {
     T* ptr;
-    std::string type_name;
+    std::string history;
 
-    control_block(T* p, const std::string& type);
+    control_block(T* p);
     ~control_block();
+
+    void append_interaction(const std::string& method, const std::string& reply);
 };
 
 template <typename T>
@@ -29,8 +31,6 @@ public:
 
 private:
     control_block<T>* ctrl_;
-    std::string history_;
 };
 
 } // namespace asp
-

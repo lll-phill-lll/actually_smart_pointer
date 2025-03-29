@@ -1,11 +1,9 @@
-
 #include "actually_smart_pointer.hpp"
 #include "llama.h"
 
 #include <string>
 #include <vector>
 #include <iostream>
-#include <typeinfo>
 #include <utility>
 
 namespace asp {
@@ -16,10 +14,13 @@ namespace asp {
 
 // === Logging Macro ===
 #ifdef LLM_DEBUG_LOG_ENABLED
-    #define LOG(msg) (std::clog << msg << std::endl)
+    #define LOG(this_ptr) (std::clog << "[LLM][" << (void*)(this_ptr) << "] ")
 #else
-    #define LOG(msg) ((void)0)
+    #define LOG(this_ptr) if (false) std::clog
 #endif
+
+#define TRUE_STR "true"
+#define FALSE_STR "false"
 
 // === LLM singleton ===
 class LLM {
@@ -31,15 +32,16 @@ public:
 
     std::string ask_with_context(const std::string& question, const std::string& history) {
         ensure_initialized();
-        std::string full_prompt = "Previous interactions:\n" + history + "Q: " + question + "\nA:";
+        std::string full_prompt = history + "Q: " + question + "()\nA:";
 
-        LOG("[LLM] Prompt:\n" << full_prompt);
+        LOG(this) << "Prompt:\n" << full_prompt << std::endl;
 
         std::string reply = ask_raw(full_prompt);
 
-        LOG("[LLM] Response:\n" << reply);
+        LOG(this) << "Response:\n" << reply << std::endl;
 
-        return reply;
+        if (reply.find(TRUE_STR) != std::string::npos) return TRUE_STR;
+        return FALSE_STR;
     }
 
 private:
@@ -48,9 +50,7 @@ private:
     void ensure_initialized() {
         if (model) return;
 
-
         llama_log_set([](ggml_log_level, const char *, void *) {}, nullptr);
-
         ggml_backend_load_all();
 
         llama_model_params model_params = llama_model_default_params();
@@ -106,49 +106,50 @@ private:
 // === control_block ===
 
 template <typename T>
-control_block<T>::control_block(T* p, const std::string& type)
-    : ptr(p), type_name(type) {}
+control_block<T>::control_block(T* p)
+    : ptr(p) {
+    history = "You act as a custom shared_ptr implementation responsible for managing memory via reference counting. "
+              "I will report the names of methods called on the smart pointer. "
+              "Based on the sequence of operations, respond only with \"true\" if the underlying memory should be deleted, or \"false\" if it should not. "
+              "Your responses must be strictly limited to either \"true\" or \"false\", with no additional commentary.\n";
+}
 
 template <typename T>
 control_block<T>::~control_block() {
     delete ptr;
 }
 
+template <typename T>
+void control_block<T>::append_interaction(const std::string& method, const std::string& reply) {
+    history += "Q: " + method + "()\n";
+    history += "A: " + reply + "\n";
+}
+
 // === actually_smart_pointer ===
 
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(T* ptr)
-    : ctrl_(new control_block<T>(ptr, typeid(T).name())), history_() {
-    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::constructor");
+    : ctrl_(new control_block<T>(ptr)) {
+    LOG(this) << "actually_smart_pointer::constructor" << std::endl;
 }
 
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(const actually_smart_pointer& other)
-    : ctrl_(other.ctrl_), history_(other.history_) {
-    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::copy_constructor");
+    : ctrl_(other.ctrl_) {
+    LOG(this) << "actually_smart_pointer::copy_constructor" << std::endl;
 
-    std::string question = "Object of type '" + ctrl_->type_name + "' was copied. Allow it? Answer yes or no.";
-    std::string reply = LLM::instance().ask_with_context(question, history_);
-    history_ += "Q: " + question + "\n";
-    history_ += "A: " + reply + "\n";
-
-    if (reply.find("yes") == std::string::npos) {
-        LOG("[LLM] Copy rejected by model. Object may be shared without permission.");
-    }
+    std::string reply = LLM::instance().ask_with_context("copy", ctrl_->history);
+    ctrl_->append_interaction("copy", reply);
 }
 
 template <typename T>
 actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(const actually_smart_pointer& other) {
-    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::copy_assignment");
+    LOG(this) << "actually_smart_pointer::copy_assignment" << std::endl;
 
     if (this != &other) {
-        std::string question = "Pointer assignment occurred for type '" + ctrl_->type_name + "'. Allow? yes/no";
-        std::string reply = LLM::instance().ask_with_context(question, history_);
-        history_ += "Q: " + question + "\n";
-        history_ += "A: " + reply + "\n";
-
+        std::string reply = LLM::instance().ask_with_context("assign", ctrl_->history);
+        ctrl_->append_interaction("assign", reply);
         ctrl_ = other.ctrl_;
-        history_ = other.history_;
     }
 
     return *this;
@@ -156,18 +157,17 @@ actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(const actually_s
 
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(actually_smart_pointer&& other) noexcept
-    : ctrl_(other.ctrl_), history_(std::move(other.history_)) {
-    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::move_constructor");
+    : ctrl_(other.ctrl_) {
+    LOG(this) << "actually_smart_pointer::move_constructor" << std::endl;
     other.ctrl_ = nullptr;
 }
 
 template <typename T>
 actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(actually_smart_pointer&& other) noexcept {
-    LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::move_assignment");
+    LOG(this) << "actually_smart_pointer::move_assignment" << std::endl;
 
     if (this != &other) {
         ctrl_ = other.ctrl_;
-        history_ = std::move(other.history_);
         other.ctrl_ = nullptr;
     }
 
@@ -177,14 +177,12 @@ actually_smart_pointer<T>& actually_smart_pointer<T>::operator=(actually_smart_p
 template <typename T>
 actually_smart_pointer<T>::~actually_smart_pointer() {
     if (ctrl_) {
-        LOG("[LLM] actually_smart_pointer<" << typeid(T).name() << ">::destructor");
+        LOG(this) << "actually_smart_pointer::destructor" << std::endl;
 
-        std::string question = "Object of type '" + ctrl_->type_name + "' was released. Should it be deleted? Answer yes or no.";
-        std::string reply = LLM::instance().ask_with_context(question, history_);
-        history_ += "Q: " + question + "\n";
-        history_ += "A: " + reply + "\n";
+        std::string reply = LLM::instance().ask_with_context("release", ctrl_->history);
+        ctrl_->append_interaction("release", reply);
 
-        if (reply.find("yes") != std::string::npos) {
+        if (reply == TRUE_STR) {
             delete ctrl_;
         }
     }
@@ -204,4 +202,3 @@ template class actually_smart_pointer<int>;
 template class actually_smart_pointer<std::string>;
 
 } // namespace asp
-
