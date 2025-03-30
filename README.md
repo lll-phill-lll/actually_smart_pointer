@@ -253,7 +253,7 @@ cd actually_smart_pointer
 git submodule update --init --recursive
 ```
 
-### 💡 Prerequisites
+### Prerequisites
 - CMake 3.16+
 - C++17 compiler
 - Python 3 (for visualization)
@@ -330,7 +330,6 @@ python3 ../plot_benchmark.py
 
 It will generate:
 - `benchmark_time.png`
-- `benchmark_memory.png`
 
 ---
 
@@ -347,7 +346,5 @@ You act as a custom shared_ptr implementation responsible for managing memory vi
 I will report the names of methods called on the smart pointer.
 Based on the sequence of operations, respond only with "true" if the memory should be deleted, or "false" if it should not.
 ```
-
----
 
 
