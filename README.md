@@ -256,18 +256,16 @@ cd actually_smart_pointer
 - CMake 3.16+
 - C++17 compiler
 - Python 3 (for visualization)
-- [gguf-format LLM model](https://huggingface.co/collections/ggml/gguf-65c37ccab1d3c35d6976c582)
+- gguf-format LLM model
 
-We recommend [deepseek-coder-6.7b-instruct.Q4_K_M.gguf](https://huggingface.co/deepseek-ai/deepseek-coder-6.7B-instruct-GGUF).
+I used this one: https://huggingface.co/TheBloke/deepseek-coder-6.7B-instruct-GGUF.
 
 Download using `wget` or `curl`:
 ```bash
 mkdir -p models
-wget -O models/deepseek-coder-6.7b-instruct.Q4_K_M.gguf \
-  https://huggingface.co/deepseek-ai/deepseek-coder-6.7B-instruct-GGUF/resolve/main/deepseek-coder-6.7b-instruct.Q4_K_M.gguf
+wget -O https://huggingface.co/TheBloke/deepseek-coder-6.7B-instruct-GGUF/resolve/main/deepseek-coder-6.7b-instruct.Q4_K_M.gguf
 ```
-
-I used this model. It gives pretty poor results controlling the refcounting (say hi to memleaks and segfaults) but it uses only about 300Mb of RAM and 4GB of disk space. 
+This model gives pretty poor results controlling the refcounts (say hi to memleaks and segfaults) but it uses only about 300Mb of RAM and 4GB of disk space. 
 
 ---
 
