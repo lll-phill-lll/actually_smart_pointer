@@ -263,8 +263,8 @@ I used this one: https://huggingface.co/TheBloke/deepseek-coder-6.7B-instruct-GG
 
 Download using `wget` or `curl`:
 ```bash
-mkdir -p models
-wget -O https://huggingface.co/TheBloke/deepseek-coder-6.7B-instruct-GGUF/resolve/main/deepseek-coder-6.7b-instruct.Q4_K_M.gguf
+mkdir -p models && cd models
+wget https://huggingface.co/TheBloke/deepseek-coder-6.7B-instruct-GGUF/resolve/main/deepseek-coder-6.7b-instruct.Q4_K_M.gguf
 ```
 This model gives pretty poor results controlling the refcounts (say hi to memleaks and segfaults) but it uses only about 300Mb of RAM and 4GB of disk space. 
 
