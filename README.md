@@ -250,6 +250,7 @@ Maximum resident set size (kbytes): 357220
 ```bash
 git clone https://github.com/lll-phill-lll/actually_smart_pointer.git
 cd actually_smart_pointer
+git submodule update --init --recursive
 ```
 
 ### 💡 Prerequisites
