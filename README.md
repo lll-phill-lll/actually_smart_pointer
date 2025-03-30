@@ -1,22 +1,44 @@
-
-# Downloaded gguf file from: 
-https://huggingface.co/TheBloke/deepseek-coder-6.7B-instruct-GGUF
-
-
 # actually_smart_pointer
 
 > The only smart pointer that truly deserves the name.
 
+![tweet](img/tweet.png)
+
 Unlike `std::shared_ptr`, which blindly follows reference counts, `actually_smart_pointer` is *actually smart*.
-It uses a local LLM (via [llama.cpp](https://github.com/ggerganov/llama.cpp)) to monitor pointer usage, learn your coding patterns, and decide intelligently when memory should be freed.
+It uses a local LLM (via [llama.cpp](https://github.com/ggml-org/llama.cpp)) to monitor pointer usage, learn your coding patterns, and decide intelligently when memory should be freed.
 
 ---
 
-You may ask: why should I use your pointer while it sucks every possible way to the standard smart pointers? 
-I will argue: are your "smart" pointers actually smart?
+## actually_smart_pointer vs shared_ptr
 
-Can you "smart pointer" write a symphony?
+### Time
 
+![time](img/benchmark_time.png)
+
+### Correctness
+
+Yes, sometimes memory leaks.
+
+Yes, sometimes there's a segfault.
+
+Choose a better model for better results.
+
+### Comparison
+
+| Feature          | `std::shared_ptr` | `actually_smart_pointer` |
+|------------------|-------------------|---------------------------|
+| Speed            | ✅                | ❌                        |
+| No memory leaks  | ✅                | ❌                        |
+| No segfaults     | ✅                | ❌                        |
+| Smartness        | ❌                | ✅                        |
+
+---
+
+**You may ask**: why use this pointer if it sucks in every possible way compared to standard smart pointers?
+
+**I ask you this**: are your so-called “smart” pointers actually smart?
+
+<details> <summary>Can your "smart" pointers write a symphony?</summary>
 
 ```c++
 int main() {
@@ -26,14 +48,144 @@ int main() {
 ```
 
 Response:
+
+<pre>
+ of music in Python using the `fluidsynth` library.
+
+## Installation
+
+You can install the `fluidsynth` library using pip:
+
+```bash
+pip install fluidsynth
 ```
+
+You also need to install the FluidSynth SoundFonts. You can download them from the [FluidSynth website](http://www.fluidsynth.org/).
+
+## Usage
+
+Here is a simple example of how to use the `fluidsynth` library to write a symphony:
+
+```python
+from fluidsynth import FluidSynth
+
+fs = FluidSynth()
+fs.set_sound_font("/path/to/your/soundfont.sf2")
+
+midi_output = 0
+fs.set_midi_output(midi_output)
+
+soundfont_program = 0  # Program number of the soundfont to use
+soundfont_bank = 0  # Bank number of the soundfont to use
+fs.select_soundfont_program(soundfont_program, soundfont_bank)
+
+# Play a C major chord
+chord = [60, 64, 67]  # MIDI note numbers for C, E, G
+for note in chord:
+    fs.noteon(0, note, 127)
+
+# Wait for a while
+import time
+time.sleep(1)
+
+# Stop the chord
+for note in chord:
+    fs.noteoff(0, note)
+
+# Close the MIDI output
+fs.delete()
 ```
 
+This script will play a C major chord for one second. You can adjust the `chord` variable to play different notes.
 
-Can your "smart" pointer turn a canvas into a masterpiece?
+Please note that this is a very basic example. The `fluidsynth` library is capable of much more, including playing MIDI files, handling multiple MIDI outputs, and more. You should refer to the [FluidSynth documentation](http://www.fluidsynth.org/api/index.html) for more information.
+
+## Further Reading
+
+- [FluidSynth documentation](http://www.fluidsynth.org/api/index.
+
+</pre>
+
+gnu-time:
+```
+Command being timed: "./example"
+...
+Elapsed (wall clock) time (h:mm:ss or m:ss): 0:18.99
+...
+Maximum resident set size (kbytes): 351116
+...
+```
+
+</details>
+
+<details> <summary>Can your "smart" pointers turn a canvas into a masterpiece?</summary>
+
+```c++
+int main() {
+    asp::actually_smart_pointer<int> p(new int(5));
+
+    std::cout << p.ask("Turn canvas into a masterpiece")<< std::endl;
+}
+```
+
+Response???:
+<pre>
+    </p>
+        </div>
+        <div class="col-md-4">
+          <img src="images/portfolio-4.png" alt="Map of Favorite Spots" class="img-fluid">
+          <h3>Map of Favorite Spots</h3>
+          <p>I love to travel and I've been to many places. I've created a map of my favorite spots.</p>
+        </div>
+        <div class="col-md-4">
+          <img src="images/portfolio-5.png" alt="Photo Gallery" class="img-fluid">
+          <h3>Photo Gallery</h3>
+          <p>A collection of my favorite photos. I've taken a lot of pictures and I'm always adding to this collection.</p>
+        </div>
+        <div class="col-md-4">
+          <img src="images/portfolio-6.png" alt="Calculator" class="img-fluid">
+          <h3>Calculator</h3>
+          <p>A simple calculator that can perform basic arithmetic operations.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <h2>Contact Me</h2>
+        <p>If you're interested in chatting or want more information about what I've been working on, I'd love to hear from you.</p>
+        <p>Phone <strong>+1 (111) 555-1234</strong></p>
+        <p>Email <strong>email@yoursite.com</strong></p>
+      </div>
+      <div class="footer-bottom">
+        <p>Student name</p>
+        <p>Back to top</p>
+      </div>
+    </footer>
+
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3
+
+    
+</pre>
+
+gnu-time:
+
+```
+Command being timed: "./example"
+...
+Elapsed (wall clock) time (h:mm:ss or m:ss): 0:16.79
+...
+Maximum resident set size (kbytes): 356820
+...
+```
+
+</details>
 
 
-Can your "smart" pointer write a bubble sort?
+
+<details> <summary>Can your "smart" pointers write a bubble sort?</summary>
 
 ```c++
 int main() {
@@ -86,14 +238,9 @@ Elapsed (wall clock) time (h:mm:ss or m:ss): 0:17.41
 Maximum resident set size (kbytes): 357220
 ...
 ```
+</details>
 
-(all of these are done using the small 4GB model described below. As for the hardware mbp M2 is used).
-## Features
-
-- **LLM-Powered Deallocation**: decides whether to free memory based on a conversation history of method calls (`copy()`, `release()`, etc.).
-- **Pointer with memory**: remembers past operations and adapts its behavior accordingly.
-- **Debug Logging**: see all LLM prompts and responses per pointer (optional).
-- **Benchmarking**: compare against `std::shared_ptr` in time and memory.
+(Benchmarks use the 4GB model (linked below) on an M2 MacBook Pro.).
 
 ---
 
@@ -203,12 +350,5 @@ Based on the sequence of operations, respond only with "true" if the memory shou
 ```
 
 ---
-
-## Why?
-
-Because it's time our smart pointers were... actually smart.
-
-This project is a satire and a tool to explore human-like memory management logic, deterministic prompt engineering, and llama.cpp integration.
-
 
 
