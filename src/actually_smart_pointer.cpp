@@ -62,6 +62,11 @@ public:
         return FALSE_STR;
     }
 
+    std::string ask(const std::string& question) {
+        ensure_initialized();
+        return ask_raw(question, 1000);
+    }
+
 private:
     LLM() : model(nullptr), ctx(nullptr), vocab(nullptr), sampler(nullptr) {}
 
@@ -149,6 +154,10 @@ void control_block<T>::append_interaction(const std::string& method, const std::
 
 // === actually_smart_pointer ===
 
+template <typename T>
+std::string actually_smart_pointer<T>::ask(const std::string& query) {
+    return LLM::instance().ask(query);
+}
 template <typename T>
 actually_smart_pointer<T>::actually_smart_pointer(T* ptr)
     : ctrl_(new control_block<T>(ptr)) {
