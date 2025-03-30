@@ -29,6 +29,8 @@ public:
     T& operator*() const;
     T* operator->() const;
 
+    std::string ask(const std::string& query);
+
 private:
     control_block<T>* ctrl_;
 };

@@ -33,3 +33,8 @@ add_executable(example main.cpp)
 target_link_libraries(example PRIVATE actually_smart_pointer)
 include_directories(include)
 
+
+enable_testing()
+add_executable(benchmark_std tests/benchmark_std.cpp)
+add_executable(benchmark_asp tests/benchmark_asp.cpp)
+target_link_libraries(benchmark_asp PRIVATE actually_smart_pointer)

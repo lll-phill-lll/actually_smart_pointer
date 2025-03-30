@@ -88,7 +88,7 @@ private:
         llama_sampler_chain_add(sampler, llama_sampler_init_greedy());
     }
 
-    std::string ask_raw(const std::string& prompt) {
+    std::string ask_raw(const std::string& prompt, int max_tokens = 2) {
         llama_kv_self_clear(ctx);
         const int n_prompt = -llama_tokenize(vocab, prompt.c_str(), prompt.size(), NULL, 0, true, true);
         std::vector<llama_token> prompt_tokens(n_prompt);
@@ -103,7 +103,6 @@ private:
 
         std::string result;
 
-        const int max_tokens = 2;
         for (int i = 0; i < max_tokens; ++i) {
             llama_token token = llama_sampler_sample(sampler, ctx, -1);
             if (llama_vocab_is_eog(vocab, token)) break;

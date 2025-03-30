@@ -2,8 +2,10 @@
 #include <iostream>
 
 int main() {
-    asp::actually_smart_pointer<std::string> p(new std::string("Hello"));
-    std::cout << *p << std::endl;
+    for (int i = 0; i < 100; ++i) {
+        asp::actually_smart_pointer<std::string> p(new std::string("Hello"));
+        std::cout << *p << std::endl;
 
-    asp::actually_smart_pointer<std::string> p2 = p;
+        asp::actually_smart_pointer<std::string> p2 = p;
+    }
 }
